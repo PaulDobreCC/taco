@@ -36,7 +36,7 @@ def verbose_status_code(value, elapsed):
 		fg_elapsed = 'red'
 
 	click.secho(' * ', fg='green', nl=False)
-	click.secho(' ' + str(value) + ' ', bg=bg_status_code, fg='white', bold = True, nl=False)
+	click.secho(bg(29,139,58) + fg.white + ' ' + str(value) + ' ' + rs.all, bold = True, nl=False)
 	click.secho(' ' + 'Request status ' + ' ', fg='white', nl=False)
 	click.secho('- ' + str(elapsed) + '', fg=fg_elapsed)
 	#click.echo('\n')
@@ -77,7 +77,6 @@ def stripped(ctx, fsyms, tsyms, json, verbose):
 		if verbose == True and json == False:
 			verbose_status_code('Connection error', 0)
 			return -1
-
 
 	if json == True:
 		click.echo(r.json())
@@ -140,13 +139,14 @@ def price(ctx, fsyms, tsyms, json, verbose, extra):
 		for ckey, cvalue in r.json()['DISPLAY'].items():
 			rows = []
 			for key,value in cvalue.items():
-				click.secho('' + ckey + '-' + key + ' ', bg='black', fg='blue', nl=False)
+				click.secho('------------------------------')
+				click.secho('' + ckey + '-' + key + ' ', fg='blue', nl=False)
 				if float(value['CHANGEPCT24HOUR']) >= 0:
-					click.secho(' ' + str(value['PRICE']) + ' ', bg='black', fg='green', nl=False)
-					click.secho(' ▲ ' + str(value['CHANGEPCT24HOUR']) + '% ', bg='green', fg='white')
+					click.secho(fg(29,139,58) + ' ' + str(value['PRICE']) + ' ' + rs.all, nl=False)
+					click.secho(fg.white + bg(29,139,58) + ' ▲ ' + str(value['CHANGEPCT24HOUR']) + '% ' + rs.all)
 				else:
-					click.secho(' ' + str(value['PRICE']) + ' ', bg='black', fg='red', nl=False)
-					click.secho(' ▼ ' + str(value['CHANGEPCT24HOUR']) + '% ', bg='red', fg='white')
+					click.secho(fg.red + ' ' + str(value['PRICE']) + ' ' + rs.all, nl=False)
+					click.secho(fg.white + bg.red + ' ▼ ' + str(value['CHANGEPCT24HOUR']) + '% ' + rs.all)
 				if extra == True:
 					for ikey, ivalue in value.items():
 						if ikey not in BANNED_COLUMNS:
@@ -154,6 +154,7 @@ def price(ctx, fsyms, tsyms, json, verbose, extra):
 					print_table('label value'.split(), rows,
 				        styles=STYLES, titles=TITLES, max_column_widths=MAX_COLUMN_WIDTHS)
 					rows = []
+			click.secho('------------------------------')
 				#pair = sym + '-' + key
 				#rows.append({'pair': pair, 'price': str(value)})
 
