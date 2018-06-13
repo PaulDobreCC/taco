@@ -5,4 +5,5 @@ clickclick==1.2.2
 idna==2.7
 PyYAML==3.12
 requests==2.19.0
+sty==1.0.0b6
 urllib3==1.23

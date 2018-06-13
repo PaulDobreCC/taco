@@ -4,11 +4,15 @@ from clickclick import AliasedGroup, Action, choice, FloatRange, OutputFormat, _
 from clickclick import ok, warning, error, fatal_error, action, info
 from clickclick.console import print_table
 import time
+import json as _json
+from sty import fg, bg, ef, rs
 
 STYLES = {
 	'SUCCESS': {'fg': 'green'},
 	'ERROR': {'fg': 'red'},
 	'WARNING': {'fg': 'yellow', 'bold': True},
+	'PRICE_UP': {'fg': 'green', 'background': 'black'},
+	'PRICE_DOWN': {'fg': 'red', 'background': 'black'},
 }
 
 @click.group(invoke_without_command=True)
@@ -16,6 +20,7 @@ STYLES = {
 def cli(ctx):
     if ctx.invoked_subcommand is None:
         click.echo('I was invoked without subcommand')
+
 
 def verbose_request_start(value):
 	click.secho(' *', fg='green', nl=False)
@@ -36,13 +41,13 @@ def verbose_status_code(value, elapsed):
 	click.secho('- ' + str(elapsed) + '', fg=fg_elapsed)
 	#click.echo('\n')
 
-@cli.command()
+@cli.command('stripped')
 @click.pass_context
 @click.option('--fsyms', default='BTC', help='FSYMS parameter')
 @click.option('--tsyms', default='USD', help='TSYMS parameter')
 @click.option('--json', is_flag=True)
 @click.option('--verbose', is_flag=True)
-def price(ctx, fsyms, tsyms, json, verbose):
+def stripped(ctx, fsyms, tsyms, json, verbose):
 	TITLES = {
 	    'pair': 'Pair',
 	    'price': 'Price',
@@ -86,6 +91,71 @@ def price(ctx, fsyms, tsyms, json, verbose):
 
 			print_table('pair price'.split(), rows,
 			                styles=STYLES, titles=TITLES, max_column_widths=MAX_COLUMN_WIDTHS)
+
+
+@cli.command('price')
+@click.pass_context
+@click.option('--fsyms', default='BTC', help='FSYMS parameter')
+@click.option('--tsyms', default='USD', help='TSYMS parameter')
+@click.option('--extra', is_flag=True)
+@click.option('--json', is_flag=True)
+@click.option('--verbose', is_flag=True)
+def price(ctx, fsyms, tsyms, json, verbose, extra):
+	TITLES = {
+	    'label': 'Label',
+	    'value': 'Value',
+	}
+
+	BANNED_COLUMNS = ['FROMSYMBOL', 'TOSYMBOL', 'LASTTRADEID', 'PRICE']
+
+	MAX_COLUMN_WIDTHS = {
+	    'pair': 30,
+	    'price': 50,
+	}
+
+	url = 'https://min-api.cryptocompare.com/data/pricemultifull'
+
+	if verbose == True and json == False:
+		verbose_request_start(url)
+
+	payload = {'fsyms': fsyms, 'tsyms': tsyms}
+	try:
+		r = requests.get(url, params=payload, stream=True)
+		r.raise_for_status()
+		if verbose == True and json == False:
+			verbose_status_code(r.status_code, r.elapsed.total_seconds())
+	except requests.exceptions.HTTPError as e:
+		verbose_status_code(r.status_code, r.elapsed.total_seconds())
+		return -1
+	except requests.exceptions.RequestException as e:
+		#print('Connection error: {}'.format(e))
+		if verbose == True and json == False:
+			verbose_status_code('Connection error', 0)
+			return -1
+
+
+	if json == True:
+		click.echo(r.json())
+	else:
+		for ckey, cvalue in r.json()['DISPLAY'].items():
+			rows = []
+			for key,value in cvalue.items():
+				click.secho('' + ckey + '-' + key + ' ', bg='black', fg='blue', nl=False)
+				if float(value['CHANGEPCT24HOUR']) >= 0:
+					click.secho(' ' + str(value['PRICE']) + ' ', bg='black', fg='green', nl=False)
+					click.secho(' ▲ ' + str(value['CHANGEPCT24HOUR']) + '% ', bg='green', fg='white')
+				else:
+					click.secho(' ' + str(value['PRICE']) + ' ', bg='black', fg='red', nl=False)
+					click.secho(' ▼ ' + str(value['CHANGEPCT24HOUR']) + '% ', bg='red', fg='white')
+				if extra == True:
+					for ikey, ivalue in value.items():
+						if ikey not in BANNED_COLUMNS:
+							rows.append({'label': ikey, 'value': ivalue})
+					print_table('label value'.split(), rows,
+				        styles=STYLES, titles=TITLES, max_column_widths=MAX_COLUMN_WIDTHS)
+					rows = []
+				#pair = sym + '-' + key
+				#rows.append({'pair': pair, 'price': str(value)})
 
 
 
