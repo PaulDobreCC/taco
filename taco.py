@@ -5,6 +5,7 @@ from clickclick import ok, warning, error, fatal_error, action, info
 from clickclick.console import print_table
 import time
 import json as _json
+from prettytable import PrettyTable
 from sty import fg, bg, ef, rs
 
 STYLES = {
@@ -136,27 +137,37 @@ def price(ctx, fsyms, tsyms, json, verbose, extra):
 	if json == True:
 		click.echo(r.json())
 	else:
+		table = PrettyTable(['Pair', 'Price', 'Percentage'])
+		table.align = 'r'
 		for ckey, cvalue in r.json()['DISPLAY'].items():
 			rows = []
 			for key,value in cvalue.items():
-				click.secho('------------------------------')
-				click.secho('' + ckey + '-' + key + ' ', fg='blue', nl=False)
-				if float(value['CHANGEPCT24HOUR']) >= 0:
-					click.secho(fg(29,139,58) + ' ' + str(value['PRICE']) + ' ' + rs.all, nl=False)
-					click.secho(fg.white + bg(29,139,58) + ' ▲ ' + str(value['CHANGEPCT24HOUR']) + '% ' + rs.all)
-				else:
-					click.secho(fg.red + ' ' + str(value['PRICE']) + ' ' + rs.all, nl=False)
-					click.secho(fg.white + bg.red + ' ▼ ' + str(value['CHANGEPCT24HOUR']) + '% ' + rs.all)
-				if extra == True:
-					for ikey, ivalue in value.items():
-						if ikey not in BANNED_COLUMNS:
-							rows.append({'label': ikey, 'value': ivalue})
-					print_table('label value'.split(), rows,
-				        styles=STYLES, titles=TITLES, max_column_widths=MAX_COLUMN_WIDTHS)
-					rows = []
-			click.secho('------------------------------')
+				col_pair = '' + ckey + '-' + key + ' '
+				if float(value['CHANGEPCT24HOUR']) > 0:
+					col_price = fg(29,139,58) + ' ' + str(value['PRICE']) + rs.all
+					col_percentage = fg.white + bg(29,139,58) + '+'+ str(value['CHANGEPCT24HOUR']) + '% ' + ' ▲ '  + rs.all
+				if float(value['CHANGEPCT24HOUR']) < 0:
+					col_price = fg.red + ' ' + str(value['PRICE']) + rs.all
+					col_percentage = fg.white + bg.red + str(value['CHANGEPCT24HOUR']) + '% ' + ' ▼ '  + rs.all
+				if float(value['CHANGEPCT24HOUR']) == 0:
+					col_price = fg.red + ' ' + str(value['PRICE']) + rs.all
+					col_percentage = fg.white + bg.blue + str(value['CHANGEPCT24HOUR']) + '% ' + ' ◎ '  + rs.all	
+				
+				table.add_row([col_pair, col_price, col_percentage])
+
+			if extra == True:
+				click.secho(table.get_string())
+				table.clear_rows()
+				for ikey, ivalue in value.items():
+					if ikey not in BANNED_COLUMNS:
+						rows.append({'label': ikey, 'value': ivalue})
+				print_table('label value'.split(), rows,
+					       styles=STYLES, titles=TITLES, max_column_widths=MAX_COLUMN_WIDTHS)
+				rows = []
 				#pair = sym + '-' + key
-				#rows.append({'pair': pair, 'price': str(value)})
+			#rows.append({'pair': pair, 'price': str(value)})
+		if extra == False:
+			click.secho(table.get_string())
 
 
 
