@@ -30,14 +30,14 @@ def verbose_request_start(value):
 
 def verbose_status_code(value, elapsed):
 	if value == 200:
-		bg_status_code = 'green'
+		bg_status_code = bg(29,139,58)
 		fg_elapsed = 'green'
 	else:
-		bg_status_code = 'red'
+		bg_status_code = bg.red
 		fg_elapsed = 'red'
 
 	click.secho(' * ', fg='green', nl=False)
-	click.secho(bg(29,139,58) + fg.white + ' ' + str(value) + ' ' + rs.all, bold = True, nl=False)
+	click.secho(bg_status_code + fg.white + ' ' + str(value) + ' ' + rs.all, bold = True, nl=False)
 	click.secho(' ' + 'Request status ' + ' ', fg='white', nl=False)
 	click.secho('- ' + str(elapsed) + '', fg=fg_elapsed)
 	#click.echo('\n')
@@ -76,7 +76,7 @@ def stripped(ctx, fsyms, tsyms, json, verbose):
 	except requests.exceptions.RequestException as e:
 		#print('Connection error: {}'.format(e))
 		if verbose == True and json == False:
-			verbose_status_code('Connection error', 0)
+			verbose_status_code(r.status_code, 0)
 			return -1
 
 	if json == True:
@@ -123,15 +123,15 @@ def price(ctx, fsyms, tsyms, json, verbose, extra):
 		r = requests.get(url, params=payload, stream=True)
 		r.raise_for_status()
 		if verbose == True and json == False:
-			verbose_status_code(r.status_code, r.elapsed.total_seconds())
+			verbose_status_code(500, r.elapsed.total_seconds())
 	except requests.exceptions.HTTPError as e:
-		verbose_status_code(r.status_code, r.elapsed.total_seconds())
+		verbose_status_code(400, r.elapsed.total_seconds())
 		return -1
 	except requests.exceptions.RequestException as e:
 		#print('Connection error: {}'.format(e))
-		if verbose == True and json == False:
-			verbose_status_code('Connection error', 0)
-			return -1
+		if json == False:
+			verbose_status_code(500, 0)
+		return -1
 
 
 	if json == True:
